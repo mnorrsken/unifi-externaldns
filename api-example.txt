@@ -1,0 +1,26 @@
+
+
+
+curl -k -X GET "<api-url>/v1/sites/<site-id>/clients?limit=200" -H 'X-API-KEY: <api-key>' -H 'Accept: application/json'
+
+example response format:
+
+{
+  "offset": 0,
+  "limit": 200,
+  "count": 1,
+  "totalCount": 1,
+  "data": [
+    {
+      "type": "string",
+      "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+      "name": "string",
+      "connectedAt": "2019-08-24T14:15:22Z",
+      "ipAddress": "string",
+      "access": {
+        "type": "DEFAULT"
+      }
+    }
+  ]
+}
+

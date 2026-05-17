@@ -29,20 +29,13 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-type accessInfo struct {
-	Type string `json:"type"`
+type lease struct {
+	Hostname string `json:"hostname"`
+	IP       string `json:"ip"`
 }
 
-type client struct {
-	ID          string     `json:"id"`
-	Name        string     `json:"name"`
-	ConnectedAt string     `json:"connectedAt"`
-	IPAddress   string     `json:"ipAddress"`
-	Access      accessInfo `json:"access"`
-}
-
-type clientResponse struct {
-	Data []client `json:"data"`
+type leaseResponse struct {
+	DHCPLeaseInfo []lease `json:"dhcp_lease_info"`
 }
 
 type Config struct {
@@ -57,18 +50,14 @@ type Config struct {
 
 const (
 	defaultNamespace = "default"
+	defaultSiteID    = "default"
 	defaultTTL       = 300
-)
-
-var (
-	dnsLabelRegex  = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$`)
-	invalidNameRun = regexp.MustCompile(`[^a-z0-9-]+`)
 )
 
 func loadConfig(args []string) (Config, error) {
 	fs := flag.NewFlagSet(args[0], flag.ContinueOnError)
-	apiURLFlag := fs.String("api-url", "", "Base Unifi API URL, e.g. https://unifi.example.com")
-	siteIDFlag := fs.String("site-id", "", "Unifi site identifier")
+	apiURLFlag := fs.String("api-url", "", "Base Unifi network API URL, e.g. https://router.internal/proxy/network")
+	siteIDFlag := fs.String("site-id", defaultSiteID, "Unifi site identifier")
 	domainFlag := fs.String("domain-suffix", "", "DNS suffix to append, e.g. example.com")
 	pollFlag := fs.String("poll-interval", "1m", "Poll interval, e.g. 30s or 2m")
 	nsFlag := fs.String("namespace", defaultNamespace, "Kubernetes namespace for generated CRs")
@@ -89,12 +78,15 @@ func loadConfig(args []string) (Config, error) {
 	if cfg.Namespace == "" {
 		cfg.Namespace = defaultNamespace
 	}
+	if cfg.SiteID == "" {
+		cfg.SiteID = defaultSiteID
+	}
 
 	if cfg.APIKey == "" {
 		return Config{}, errors.New("UNIFI_API_KEY env var is required")
 	}
-	if cfg.APIURL == "" || cfg.SiteID == "" || cfg.DomainSuffix == "" {
-		return Config{}, errors.New("flags --api-url, --site-id, and --domain-suffix are required")
+	if cfg.APIURL == "" || cfg.DomainSuffix == "" {
+		return Config{}, errors.New("flags --api-url and --domain-suffix are required")
 	}
 
 	var err error
@@ -143,26 +135,16 @@ func loadKubeConfig() (*rest.Config, error) {
 	return clientcmd.BuildConfigFromFlags("", kubeconfig)
 }
 
-func buildClientsURL(baseURL, siteID string) (string, error) {
-	endpoint, err := url.JoinPath(strings.TrimSuffix(baseURL, "/"), "v1", "sites", siteID, "clients")
+func buildLeasesURL(baseURL, siteID string) (string, error) {
+	endpoint, err := url.JoinPath(strings.TrimSuffix(baseURL, "/"), "v2", "api", "site", siteID, "active-leases")
 	if err != nil {
 		return "", fmt.Errorf("build URL: %w", err)
 	}
-
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		return "", fmt.Errorf("parse URL: %w", err)
-	}
-
-	q := u.Query()
-	q.Set("limit", "200")
-	u.RawQuery = q.Encode()
-
-	return u.String(), nil
+	return endpoint, nil
 }
 
-func fetchClients(ctx context.Context, client *http.Client, cfg Config) ([]client, error) {
-	endpoint, err := buildClientsURL(cfg.APIURL, cfg.SiteID)
+func fetchLeases(ctx context.Context, httpClient *http.Client, cfg Config) ([]lease, error) {
+	endpoint, err := buildLeasesURL(cfg.APIURL, cfg.SiteID)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +156,7 @@ func fetchClients(ctx context.Context, client *http.Client, cfg Config) ([]clien
 	req.Header.Set("X-API-KEY", cfg.APIKey)
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
@@ -184,44 +166,29 @@ func fetchClients(ctx context.Context, client *http.Client, cfg Config) ([]clien
 		return nil, fmt.Errorf("unexpected status %d", resp.StatusCode)
 	}
 
-	var payload clientResponse
+	var payload leaseResponse
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
 		return nil, fmt.Errorf("decode response: %w", err)
 	}
 
-	return payload.Data, nil
+	return payload.DHCPLeaseInfo, nil
 }
 
-func firstLabel(name string) string {
-	parts := strings.Fields(name)
-	if len(parts) == 0 {
-		return ""
-	}
-	return parts[0]
+var invalidHostRun = regexp.MustCompile(`[^a-z0-9-]+`)
+
+func sanitizeHost(raw string) string {
+	host := invalidHostRun.ReplaceAllString(strings.ToLower(raw), "-")
+	return strings.Trim(host, "-")
 }
 
-func isValidDNSLabel(label string) bool {
-	return dnsLabelRegex.MatchString(label)
-}
-
-func sanitizeName(raw string) string {
-	name := strings.ToLower(strings.TrimSpace(raw))
-	name = invalidNameRun.ReplaceAllString(name, "-")
-	name = strings.Trim(name, "-")
-	if name == "" {
-		return "client"
-	}
-	return name
-}
-
-func buildDNSEndpoint(cfg Config, rawName, label, ip string) *v1alpha1.DNSEndpoint {
+func buildDNSEndpoint(cfg Config, name, host, ip string) *v1alpha1.DNSEndpoint {
 	return &v1alpha1.DNSEndpoint{
 		TypeMeta: v1.TypeMeta{
 			APIVersion: "externaldns.k8s.io/v1alpha1",
 			Kind:       "DNSEndpoint",
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name:      sanitizeName(rawName),
+			Name:      name,
 			Namespace: cfg.Namespace,
 			Labels: map[string]string{
 				"unifi-externaldns.snosr.se/site-id": cfg.SiteID,
@@ -230,7 +197,7 @@ func buildDNSEndpoint(cfg Config, rawName, label, ip string) *v1alpha1.DNSEndpoi
 		Spec: v1alpha1.DNSEndpointSpec{
 			Endpoints: []*endpoint.Endpoint{
 				{
-					DNSName:    fmt.Sprintf("%s.%s", strings.ToLower(label), cfg.DomainSuffix),
+					DNSName:    fmt.Sprintf("%s.%s", host, cfg.DomainSuffix),
 					RecordTTL:  endpoint.TTL(defaultTTL),
 					RecordType: "A",
 					Targets:    []string{ip},
@@ -240,17 +207,15 @@ func buildDNSEndpoint(cfg Config, rawName, label, ip string) *v1alpha1.DNSEndpoi
 	}
 }
 
-func desiredResources(cfg Config, clients []client) map[string]*v1alpha1.DNSEndpoint {
+func desiredResources(cfg Config, leases []lease) map[string]*v1alpha1.DNSEndpoint {
 	items := make(map[string]*v1alpha1.DNSEndpoint)
-	for _, c := range clients {
-		label := firstLabel(c.Name)
-		ip := strings.TrimSpace(c.IPAddress)
-
-		if label == "" || ip == "" || !isValidDNSLabel(label) {
+	for _, l := range leases {
+		name := sanitizeHost(l.Hostname)
+		if name == "" || l.IP == "" {
 			continue
 		}
 
-		cr := buildDNSEndpoint(cfg, c.Name, label, ip)
+		cr := buildDNSEndpoint(cfg, name, l.Hostname, l.IP)
 		items[cr.Name] = cr
 	}
 	return items
@@ -323,11 +288,11 @@ func reconcileEndpoints(ctx context.Context, c ctrlclient.Client, cfg Config, de
 	return stats, nil
 }
 
-func pollOnce(parent context.Context, client *http.Client, cfg Config) error {
+func pollOnce(parent context.Context, httpClient *http.Client, cfg Config) error {
 	ctx, cancel := context.WithTimeout(parent, 15*time.Second)
 	defer cancel()
 
-	clients, err := fetchClients(ctx, client, cfg)
+	leases, err := fetchLeases(ctx, httpClient, cfg)
 	if err != nil {
 		return err
 	}
@@ -337,7 +302,7 @@ func pollOnce(parent context.Context, client *http.Client, cfg Config) error {
 		return fmt.Errorf("kubernetes client: %w", err)
 	}
 
-	desired := desiredResources(cfg, clients)
+	desired := desiredResources(cfg, leases)
 	reconStats, err := reconcileEndpoints(ctx, kc, cfg, desired)
 	if err != nil {
 		return err
@@ -353,7 +318,7 @@ func main() {
 		log.Fatalf("config error: %v", err)
 	}
 
-	client := newHTTPClient(cfg.InsecureSkipVerify)
+	httpClient := newHTTPClient(cfg.InsecureSkipVerify)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -361,7 +326,7 @@ func main() {
 	ticker := time.NewTicker(cfg.PollInterval)
 	defer ticker.Stop()
 
-	if err := pollOnce(ctx, client, cfg); err != nil {
+	if err := pollOnce(ctx, httpClient, cfg); err != nil {
 		log.Printf("poll error: %v", err)
 	}
 
@@ -371,7 +336,7 @@ func main() {
 			log.Println("received shutdown signal, exiting")
 			return
 		case <-ticker.C:
-			if err := pollOnce(ctx, client, cfg); err != nil {
+			if err := pollOnce(ctx, httpClient, cfg); err != nil {
 				log.Printf("poll error: %v", err)
 			}
 		}

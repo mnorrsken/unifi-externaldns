@@ -6,20 +6,26 @@ import (
 )
 
 var _ = Describe("desiredResources", func() {
-	It("filters invalid names and ips and builds endpoints", func() {
+	It("sanitizes hostnames, skips empties, and builds endpoints", func() {
 		cfg := Config{DomainSuffix: "example.com", Namespace: "default", SiteID: "site"}
-		clients := []client{
-			{Name: "valid-host", IPAddress: "10.0.0.1"},
-			{Name: "invalid@name", IPAddress: "10.0.0.2"},
-			{Name: "valid-host noip", IPAddress: ""},
+		leases := []lease{
+			{Hostname: "MARTIN-PC", IP: "10.0.0.1"},
+			{Hostname: "my_device", IP: "10.0.0.4"},
+			{Hostname: "", IP: "10.0.0.2"},
+			{Hostname: "noip-host", IP: ""},
 		}
 
-		res := desiredResources(cfg, clients)
-		Expect(res).To(HaveLen(1))
-		ep, ok := res["valid-host"]
-		Expect(ok).To(BeTrue())
-		Expect(ep.Spec.Endpoints).To(HaveLen(1))
-		Expect(ep.Spec.Endpoints[0].DNSName).To(Equal("valid-host.example.com"))
+		res := desiredResources(cfg, leases)
+		Expect(res).To(HaveLen(2))
+
+		ep := res["martin-pc"]
+		Expect(ep).NotTo(BeNil())
+		Expect(ep.Spec.Endpoints[0].DNSName).To(Equal("MARTIN-PC.example.com"))
 		Expect(ep.Spec.Endpoints[0].Targets).To(ConsistOf("10.0.0.1"))
+
+		ep = res["my-device"]
+		Expect(ep).NotTo(BeNil())
+		Expect(ep.Spec.Endpoints[0].DNSName).To(Equal("my_device.example.com"))
+		Expect(ep.Spec.Endpoints[0].Targets).To(ConsistOf("10.0.0.4"))
 	})
 })

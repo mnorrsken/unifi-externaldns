@@ -1,26 +1,49 @@
-
-
-
-curl -k -X GET "<api-url>/v1/sites/<site-id>/clients?limit=200" -H 'X-API-KEY: <api-key>' -H 'Accept: application/json'
+curl -k -X GET "<api-url>/v2/api/site/<site-id>/active-leases" -H 'X-API-KEY: <api-key>' -H 'Accept: application/json'
 
 example response format:
 
 {
-  "offset": 0,
-  "limit": 200,
-  "count": 1,
-  "totalCount": 1,
-  "data": [
+  "dhcp_lease_info": [
     {
-      "type": "string",
-      "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
-      "name": "string",
-      "connectedAt": "2019-08-24T14:15:22Z",
-      "ipAddress": "string",
-      "access": {
-        "type": "DEFAULT"
-      }
+      "client_type": "WIRED",
+      "display_name": "nas",
+      "fixed_ip": "10.0.0.10",
+      "hostname": "nas",
+      "ip": "10.0.0.10",
+      "lease_expiration_time": 0,
+      "mac": "aa:bb:cc:00:00:01",
+      "name": "nas",
+      "network_id": "0000000000000000000000aa",
+      "oui": "Example Vendor",
+      "status": "online",
+      "use_fixedip": true
+    },
+    {
+      "client_type": "WIRELESS",
+      "display_name": "laptop 11:22",
+      "hostname": "my-laptop",
+      "ip": "10.0.1.42",
+      "lease_expiration_time": 1779100000,
+      "mac": "aa:bb:cc:00:00:02",
+      "network_id": "0000000000000000000000aa",
+      "oui": "Example Vendor",
+      "status": "online",
+      "use_fixedip": false
+    },
+    {
+      "client_type": "WIRELESS",
+      "display_name": "phone 33:44",
+      "ip": "10.0.1.99",
+      "lease_expiration_time": 1779100000,
+      "mac": "aa:bb:cc:00:00:03",
+      "network_id": "0000000000000000000000aa",
+      "oui": "Example Vendor",
+      "status": "online",
+      "use_fixedip": false
     }
   ]
 }
 
+Notes:
+- The tool reads `dhcp_lease_info[].hostname` and `dhcp_lease_info[].ip`.
+- Entries without a `hostname` (like the phone above) are skipped.

@@ -1,12 +1,16 @@
 BINARY := unifi-externaldns
+MOCK   := mockunifi
 
-.PHONY: build run fmt vet test clean
+.PHONY: build mock run fmt vet test clean
 
 build:
-	go build -o bin/$(BINARY) ./...
+	go build -o bin/$(BINARY) ./cmd/unifi-externaldns
+
+mock:
+	go build -o bin/$(MOCK) ./cmd/mockunifi
 
 run:
-	go run ./...
+	go run ./cmd/unifi-externaldns
 
 fmt:
 	gofmt -w .

@@ -1,4 +1,6 @@
-
 cr-def.txt
 dns-example.txt
 bin/
+.env
+active-leases.json
+unifi-externaldns

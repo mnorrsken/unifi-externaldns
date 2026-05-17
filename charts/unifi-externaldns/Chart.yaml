@@ -1,0 +1,11 @@
+apiVersion: v2
+name: unifi-externaldns
+description: Polls Unifi DHCP leases and creates ExternalDNS DNSEndpoint resources
+version: 0.1.0
+appVersion: "0.1.0"
+type: application
+keywords:
+  - unifi
+  - externaldns
+  - dns
+  - kubernetes

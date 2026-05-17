@@ -1,0 +1,62 @@
+image:
+  repository: ghcr.io/mnorrsken/unifi-externaldns
+  tag: ""  # defaults to Chart.appVersion
+  pullPolicy: IfNotPresent
+
+unifi:
+  # Base Unifi network API URL, e.g. https://router.internal/proxy/network
+  apiUrl: ""
+  siteId: "default"
+  # Skip TLS verification (lab/self-signed setups only)
+  insecure: false
+  # Reference an existing Secret holding the Unifi API key.
+  existingSecret:
+    name: ""
+    key: "api-key"
+
+# DNS suffix appended to lease hostnames, e.g. example.com
+domainSuffix: ""
+
+pollInterval: "1m"
+
+# Namespace into which DNSEndpoint resources are created. Defaults to the
+# release namespace.
+targetNamespace: ""
+
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+replicaCount: 1
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 10m
+    memory: 64Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}

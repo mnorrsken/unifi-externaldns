@@ -1,0 +1,22 @@
+{{- if .Values.rbac.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "unifi-externaldns.fullname" . }}
+  namespace: {{ include "unifi-externaldns.targetNamespace" . }}
+  labels:
+    {{- include "unifi-externaldns.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - externaldns.k8s.io
+    resources:
+      - dnsendpoints
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+{{- end }}

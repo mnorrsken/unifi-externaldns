@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	SiteIDLabel = "unifi-externaldns.snosr.se/site-id"
+	SiteIDLabel = "unifi-externaldns/site-id"
 	defaultTTL  = 300
 )
 

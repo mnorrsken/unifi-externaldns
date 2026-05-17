@@ -25,7 +25,7 @@ go run ./cmd/unifi-externaldns \
 	--domain-suffix=example.com
 ```
 
-On each poll the tool reconciles `DNSEndpoint` resources in Kubernetes (in-cluster if available, otherwise via kubeconfig). It creates/updates/deletes CRs in the chosen namespace, labelled with `unifi-externaldns.snosr.se/site-id` and containing a single `A` record pointing to the lease IP. The DNS name and metadata.name are both the lowercased `hostname`; leases without a hostname or IP are skipped. The program listens for `SIGINT`/`SIGTERM` and exits cleanly.
+On each poll the tool reconciles `DNSEndpoint` resources in Kubernetes (in-cluster if available, otherwise via kubeconfig). It creates/updates/deletes CRs in the chosen namespace, labelled with `unifi-externaldns/site-id` and containing a single `A` record pointing to the lease IP. The DNS name and metadata.name are both the lowercased `hostname`; leases without a hostname or IP are skipped. The program listens for `SIGINT`/`SIGTERM` and exits cleanly.
 
 ## Make targets
 - `make build` - Build the main binary to `bin/unifi-externaldns`

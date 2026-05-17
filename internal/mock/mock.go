@@ -1,5 +1,5 @@
 // Package mock generates fake Unifi /v2 active-leases responses for use in
-// the mockunifi command and in end-to-end tests.
+// end-to-end tests.
 package mock
 
 import (

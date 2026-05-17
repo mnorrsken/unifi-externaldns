@@ -29,7 +29,6 @@ On each poll the tool reconciles `DNSEndpoint` resources in Kubernetes (in-clust
 
 ## Make targets
 - `make build` - Build the main binary to `bin/unifi-externaldns`
-- `make mock` - Build the mock server to `bin/mockunifi` (see below)
 - `make run` - Run the program
 - `make fmt` - Format code
 - `make vet` - Go vet
@@ -40,17 +39,3 @@ Calls the undocumented `GET <api-url>/v2/api/site/<site-id>/active-leases` endpo
 
 ## Tests
 `make test` runs the unit and end-to-end suite. The e2e test drives the real `fetchLeases` against a `httptest` instance of the mock server and reconciles the result into an in-process fake Kubernetes client (`controller-runtime/pkg/client/fake`). No external binaries are required.
-
-## Mock server
-`cmd/mockunifi` serves (or prints) a fake response matching the active-leases shape, useful for local testing.
-
-```bash
-# Print one fake response to stdout
-go run ./cmd/mockunifi --print
-
-# Serve it on :8080
-go run ./cmd/mockunifi --addr :8080
-
-# Point the real binary at it
-UNIFI_API_KEY=ignored go run ./cmd/unifi-externaldns --api-url=http://localhost:8080 --domain-suffix=lan
-```

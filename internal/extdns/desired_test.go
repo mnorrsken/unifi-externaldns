@@ -1,21 +1,24 @@
-package main
+package extdns_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/mnorrsken/unifi-externaldns/internal/extdns"
+	"github.com/mnorrsken/unifi-externaldns/internal/networkapi"
 )
 
-var _ = Describe("desiredResources", func() {
+var _ = Describe("Reconciler.Desired", func() {
 	It("sanitizes hostnames, skips empties, and builds endpoints", func() {
-		cfg := Config{DomainSuffix: "example.com", Namespace: "default", SiteID: "site"}
-		leases := []lease{
+		r := &extdns.Reconciler{DomainSuffix: "example.com", Namespace: "default", SiteID: "site"}
+		leases := []networkapi.Lease{
 			{Hostname: "MARTIN-PC", IP: "10.0.0.1"},
 			{Hostname: "my_device", IP: "10.0.0.4"},
 			{Hostname: "", IP: "10.0.0.2"},
 			{Hostname: "noip-host", IP: ""},
 		}
 
-		res := desiredResources(cfg, leases)
+		res := r.Desired(leases)
 		Expect(res).To(HaveLen(2))
 
 		ep := res["martin-pc"]

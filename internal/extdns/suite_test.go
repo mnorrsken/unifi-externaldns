@@ -1,4 +1,4 @@
-package main
+package extdns_test
 
 import (
 	"testing"
@@ -16,7 +16,7 @@ var testScheme *runtime.Scheme
 
 func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Unifi ExternalDNS Suite")
+	RunSpecs(t, "extdns Suite")
 }
 
 var _ = BeforeSuite(func() {

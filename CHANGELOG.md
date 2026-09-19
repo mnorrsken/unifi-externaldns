@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here. Versions follow `vMAJOR.MINOR.PATCH`.
 
+## v0.1.2
+
+### Changed
+- **Go 1.26** — `go.mod` now requires Go 1.26.1; Docker build image bumped from `golang:1.25-bookworm` to `golang:1.26-bookworm`.
+- **Kubernetes deps** — `k8s.io/client-go` and `k8s.io/apimachinery` 0.34.2 → 0.36.1, `sigs.k8s.io/controller-runtime` 0.22.4 → 0.24.1, `sigs.k8s.io/external-dns` 0.20.0 → 0.21.0.
+- **Test deps** — `ginkgo/v2` 2.25.3 → 2.29.0, `gomega` 1.38.2 → 1.40.0.
+- **CI** — `actions/checkout` 6 → 7.
+
 ## v0.1.1
 
 ### Added

@@ -9,7 +9,7 @@ A small Go utility that queries the Unifi active-leases API once per minute and 
 - Deployable via the bundled Helm chart published to GHCR as an OCI artifact.
 
 ## Requirements
-- Go 1.22+
+- Go 1.26.1+
 
 ## Configuration
 Parameters:

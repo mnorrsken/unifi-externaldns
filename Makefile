@@ -1,6 +1,6 @@
 BINARY := unifi-externaldns
 
-.PHONY: build run fmt vet test clean
+.PHONY: build run fmt vet vuln test clean
 
 build:
 	go build -o bin/$(BINARY) ./cmd/unifi-externaldns
@@ -13,6 +13,9 @@ fmt:
 
 vet:
 	go vet ./...
+
+vuln:
+	go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 
 test:
 	go test ./...

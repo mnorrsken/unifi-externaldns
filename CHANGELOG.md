@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. Versions follow `vMAJOR.MINOR.PATCH`.
 
+## v0.1.3
+
+### Changed
+- **Go 1.27** — `go.mod` now requires Go 1.27.3; Docker build image bumped to `golang:1.27-bookworm`.
+- **Kubernetes deps** — `k8s.io/client-go` and `k8s.io/apimachinery` 0.36.1 → 0.37.1, `sigs.k8s.io/controller-runtime` 0.24.1 → 0.25.2, `sigs.k8s.io/external-dns` 0.21.0 → 0.24.0.
+- **Test deps** — `ginkgo/v2` 2.29.0 → 2.33.1, `gomega` 1.40.0 → 1.44.0.
+- **x/ modules** — `golang.org/x/net` updated to v0.61.0 along with the other `golang.org/x` modules.
+
+### Added
+- **govulncheck** — new `make vuln` target; `release.yml` runs `govulncheck` before building the image.
+
 ## v0.1.2
 
 ### Changed

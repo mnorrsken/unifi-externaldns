@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here. Versions follow `vMAJOR.MINOR.PATCH`.
 
+## v0.1.4
+
+### Changed
+- **Kubernetes deps** — `k8s.io/client-go`, `k8s.io/apimachinery` and `k8s.io/api` 0.37.1 → 0.37.2.
+
 ## v0.1.3
 
 ### Changed

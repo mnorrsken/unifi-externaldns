@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. Versions follow `vMAJOR.MINOR.PATCH`.
 
+## v0.1.5
+
+### Changed
+- **Controller runtime** — `sigs.k8s.io/controller-runtime` 0.25.2 → 0.25.3.
+- **Test deps** — `ginkgo/v2` 2.33.1 → 2.34.0.
+
 ## v0.1.4
 
 ### Changed
